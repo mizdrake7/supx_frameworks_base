@@ -145,10 +145,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 /**
@@ -343,6 +346,10 @@ public final class PowerManagerService extends SystemService
 
     // Table of all wake locks acquired by applications.
     private final ArrayList<WakeLock> mWakeLocks = new ArrayList<>();
+
+    private Set<String> mSeenWakeLocks = new HashSet<String>();
+    private Set<String> mBlockedWakeLocks = new HashSet<String>();
+    private int mWakeLockBlockingEnabled;
 
     // A bitfield that summarizes the state of all active wakelocks.
     private int mWakeLockSummary;
@@ -1389,6 +1396,12 @@ public final class PowerManagerService extends SystemService
         resolver.registerContentObserver(Settings.System.getUriFor(
                 Settings.System.AOD_NOTIFICATION_PULSE),
                 false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.Global.getUriFor(
+                Settings.Global.WAKELOCK_BLOCKING_ENABLED),
+                false, mSettingsObserver, UserHandle.USER_ALL);
+        resolver.registerContentObserver(Settings.Global.getUriFor(
+                Settings.Global.WAKELOCK_BLOCKING_LIST),
+                false, mSettingsObserver, UserHandle.USER_ALL);
 
         IVrManager vrManager = IVrManager.Stub.asInterface(getBinderService(Context.VR_SERVICE));
         if (vrManager != null) {
@@ -1527,6 +1540,13 @@ public final class PowerManagerService extends SystemService
                     Settings.System.AOD_NOTIFICATION_PULSE_ACTIVATED, 0,
                     UserHandle.USER_CURRENT);
         }
+
+        mWakeLockBlockingEnabled = Settings.Global.getInt(resolver,
+                Settings.Global.WAKELOCK_BLOCKING_ENABLED, 0);
+        String blockedWakelockList = Settings.Global.getString(resolver,
+                Settings.Global.WAKELOCK_BLOCKING_LIST);
+        setBlockedWakeLocks(blockedWakelockList);
+
         if (mSupportsDoubleTapWakeConfig) {
             boolean doubleTapWakeEnabled = Settings.Secure.getIntForUser(resolver,
                     Settings.Secure.DOUBLE_TAP_TO_WAKE, DEFAULT_DOUBLE_TAP_TO_WAKE,
@@ -1595,11 +1615,29 @@ public final class PowerManagerService extends SystemService
                         + ", tag=\"" + tag + "\", ws=" + ws + ", uid=" + uid + ", pid=" + pid);
             }
 
+            if (tag.startsWith("WakerLock")){
+                tag = tag.substring(0,9);
+            }
+
+            boolean blockWakelock = false;
+            if (!mSeenWakeLocks.contains(tag)) {
+                if ((flags & PowerManager.WAKE_LOCK_LEVEL_MASK) == PowerManager.PARTIAL_WAKE_LOCK) {
+                    mSeenWakeLocks.add(tag);
+                }
+            }
+
+            if (mWakeLockBlockingEnabled == 1) {
+                if (mBlockedWakeLocks.contains(tag)) {
+                    blockWakelock = true;
+                }
+            }
+
             WakeLock wakeLock;
             int index = findWakeLockIndexLocked(lock);
             boolean notifyAcquire;
             if (index >= 0) {
                 wakeLock = mWakeLocks.get(index);
+                wakeLock.setIsBlocked(blockWakelock);
                 if (!wakeLock.hasSameProperties(flags, tag, ws, uid, pid, callback)) {
                     // Update existing wake lock.  This shouldn't happen but is harmless.
                     notifyWakeLockChangingLocked(wakeLock, flags, tag, packageName,
@@ -1618,6 +1656,7 @@ public final class PowerManagerService extends SystemService
                 state.mNumWakeLocks++;
                 wakeLock = new WakeLock(lock, displayId, flags, tag, packageName, ws, historyTag,
                         uid, pid, state, callback);
+                wakeLock.setIsBlocked(blockWakelock);
                 mWakeLocks.add(wakeLock);
                 setWakeLockDisabledStateLocked(wakeLock);
                 notifyAcquire = true;
@@ -1887,12 +1926,14 @@ public final class PowerManagerService extends SystemService
     @GuardedBy("mLock")
     private void notifyWakeLockAcquiredLocked(WakeLock wakeLock) {
         if (mSystemReady && !wakeLock.mDisabled) {
+        if (!wakeLock.isBlocked()) {
             wakeLock.mNotifiedAcquired = true;
             mNotifier.onWakeLockAcquired(wakeLock.mFlags, wakeLock.mTag, wakeLock.mPackageName,
                     wakeLock.mOwnerUid, wakeLock.mOwnerPid, wakeLock.mWorkSource,
                     wakeLock.mHistoryTag, wakeLock.mCallback);
             restartNofifyLongTimerLocked(wakeLock);
         }
+      }
     }
 
     @GuardedBy("mLock")
@@ -1950,13 +1991,15 @@ public final class PowerManagerService extends SystemService
 
     @GuardedBy("mLock")
     private void notifyWakeLockReleasedLocked(WakeLock wakeLock) {
-        if (mSystemReady && wakeLock.mNotifiedAcquired) {
-            wakeLock.mNotifiedAcquired = false;
-            wakeLock.mAcquireTime = 0;
-            mNotifier.onWakeLockReleased(wakeLock.mFlags, wakeLock.mTag,
-                    wakeLock.mPackageName, wakeLock.mOwnerUid, wakeLock.mOwnerPid,
-                    wakeLock.mWorkSource, wakeLock.mHistoryTag, wakeLock.mCallback);
-            notifyWakeLockLongFinishedLocked(wakeLock);
+        if (mSystemReady) {
+            if(!wakeLock.isBlocked() && wakeLock.mNotifiedAcquired) {
+                wakeLock.mNotifiedAcquired = false;
+                wakeLock.mAcquireTime = 0;
+                mNotifier.onWakeLockReleased(wakeLock.mFlags, wakeLock.mTag,
+                        wakeLock.mPackageName, wakeLock.mOwnerUid, wakeLock.mOwnerPid,
+                        wakeLock.mWorkSource, wakeLock.mHistoryTag, wakeLock.mCallback);
+                notifyWakeLockLongFinishedLocked(wakeLock);
+            }
         }
     }
 
@@ -2823,6 +2866,17 @@ public final class PowerManagerService extends SystemService
     private int getWakeLockSummaryFlags(WakeLock wakeLock) {
         switch (wakeLock.mFlags & PowerManager.WAKE_LOCK_LEVEL_MASK) {
             case PowerManager.PARTIAL_WAKE_LOCK:
+                if (wakeLock.isBlocked()) {
+                    if (DEBUG_SPEW) {
+                        Slog.d(TAG, "updateWakeLockSummaryLocked: PARTIAL_WAKE_LOCK blocked tag="
+                                    + wakeLock.mTag);
+                    }
+                    return 0;
+                }
+                if (DEBUG_SPEW) {
+                    Slog.d(TAG, "updateWakeLockSummaryLocked: PARTIAL_WAKE_LOCK tag="
+                                + wakeLock.mTag);
+                }
                 if (!wakeLock.mDisabled) {
                     // We only respect this if the wake lock is not disabled.
                     return WAKE_LOCK_CPU;
@@ -5255,6 +5309,7 @@ public final class PowerManagerService extends SystemService
         public boolean mNotifiedAcquired;
         public boolean mNotifiedLong;
         public boolean mDisabled;
+        private boolean mIsBlocked;
         public IWakeLockCallback mCallback;
 
         public WakeLock(IBinder lock, int displayId, int flags, String tag, String packageName,
@@ -5452,6 +5507,14 @@ public final class PowerManagerService extends SystemService
                 result += " SYSTEM_WAKELOCK";
             }
             return result;
+        }
+
+        public void setIsBlocked(boolean value) {
+            mIsBlocked = value;
+        }
+
+        public boolean isBlocked() {
+            return mIsBlocked;
         }
     }
 
@@ -6625,6 +6688,30 @@ public final class PowerManagerService extends SystemService
                 return mAmbientDisplaySuppressionController.getSuppressionTokens(uid);
             } finally {
                 Binder.restoreCallingIdentity(ident);
+            }
+        }
+
+        @Override
+        public String getSeenWakeLocks() {
+            StringBuffer buffer = new StringBuffer();
+            Iterator<String> nextWakeLock = mSeenWakeLocks.iterator();
+            while (nextWakeLock.hasNext()) {
+                String wakeLockTag = nextWakeLock.next();
+                buffer.append(wakeLockTag + "|");
+            }
+            if (buffer.length() > 0) {
+                buffer.deleteCharAt(buffer.length() - 1);
+            }
+            return buffer.toString();
+        }
+    }
+
+    private void setBlockedWakeLocks(String wakeLockTagsString) {
+        mBlockedWakeLocks = new HashSet<String>();
+         if (wakeLockTagsString != null && wakeLockTagsString.length() != 0) {
+            String[] parts = wakeLockTagsString.split("\\|");
+            for (int i = 0; i < parts.length; i++) {
+                mBlockedWakeLocks.add(parts[i]);
             }
         }
     }
