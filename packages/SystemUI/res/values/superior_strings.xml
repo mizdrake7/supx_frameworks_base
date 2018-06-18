@@ -198,4 +198,7 @@
     <string name="omnijaws_service_error">Error loading weather data</string>
     <string name="omnijaws_service_unknown">No weather data</string>
     <string name="omnijaws_label_default">Weather</string>
+    
+    <!-- OnTheGo Tile -->
+    <string name="quick_settings_onthego_label">On-The-Go</string>
 </resources>

@@ -24,6 +24,7 @@ import com.android.systemui.qs.tiles.CellularTile
 import com.android.systemui.qs.tiles.DataSwitchTile
 import com.android.systemui.qs.tiles.HeadsUpTile
 import com.android.systemui.qs.tiles.RebootTile
+import com.android.systemui.qs.tiles.OnTheGoTile
 import com.android.systemui.qs.tiles.SoundTile
 import com.android.systemui.qs.tiles.SyncTile
 import com.android.systemui.qs.tiles.UsbTetherTile
@@ -158,5 +159,11 @@ interface SuperiorOSModule {
     @IntoMap
     @StringKey(SmartPixelsTile.TILE_SPEC)
     fun bindSmartPixelsTile(smartPixelsTile: SmartPixelsTile): QSTileImpl<*>
+    
+    /** Inject OnTheGoTile into tileMap in QSModule */
+    @Binds
+    @IntoMap
+    @StringKey(OnTheGoTile.TILE_SPEC)
+    fun bindOnTheGoTile(onTheGoTile: OnTheGoTile): QSTileImpl<*>
 
 }
