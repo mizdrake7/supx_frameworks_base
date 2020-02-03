@@ -111,5 +111,6 @@ public class SystemSettings {
         Settings.System.QS_TILE_SECONDARY_LABEL_SIZE,
         Settings.System.TOAST_ANIMATION,
         Settings.System.BATTERY_LEVEL_COLORS,
+        Settings.System.RINGTONE_VIBRATION_PATTERN,
     };
 }
