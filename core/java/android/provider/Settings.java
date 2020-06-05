@@ -6344,10 +6344,19 @@ public final class Settings {
          * 2: mm-mm-mm
          * 3: da-da-dzzz
          * 4: da-dzzz-da
+         * 5: custom
          * @hide
          */
         @Readable
         public static final String RINGTONE_VIBRATION_PATTERN = "ringtone_vibration_pattern";
+        
+        /**
+         * Custom vibration pattern
+         * format: ms,ms,ms each a range from 0 to 1000 ms
+         * @hide
+         */
+        @Readable
+        public static final String CUSTOM_RINGTONE_VIBRATION_PATTERN = "custom_ringtone_vibration_pattern";
 
         /**
          * Use doubletap as doze pulse triggers
@@ -6741,7 +6750,7 @@ public final class Settings {
          * @hide
          */
         public static final String QS_HEADER_CLOCK_SIZE = "qs_header_clock_size";
-
+        
         /**
          * These are all public system settings
          *
