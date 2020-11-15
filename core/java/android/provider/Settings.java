@@ -5762,6 +5762,13 @@ public final class Settings {
          */
         @Readable
         public static final String GAMESPACE_GAME_LIST = "gamespace_game_list";
+        
+       /** 
+        * Whether to show media album art on keyguard
+        * @hide
+        */
+        @Readable
+        public static final String KEYGAURD_MEDIA_ART = "keygaurd_media_art";
 
         /**
          * GameSpace: Whether fullscreen intent will be suppressed while in game session
@@ -6782,6 +6789,12 @@ public final class Settings {
          */
         @Readable
         public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
+        
+        /**
+         * media artwork wallpaper blur level on lockscreen
+         * @hide
+         */
+        public static final String LOCKSCREEN_MEDIA_BLUR = "lockscreen_media_blur";
         
         /**
          * Change volume up and down handlign based on rotation
