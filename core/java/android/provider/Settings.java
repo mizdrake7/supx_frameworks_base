@@ -6626,6 +6626,12 @@ public final class Settings {
          * @hide
          */
         public static final String QS_TILE_SECONDARY_LABEL_SIZE = "qs_tile_secondary_label_size";
+        
+        /**
+         * Toggle between stock and color coded battery icon
+         * @hide
+         */
+        public static final String BATTERY_LEVEL_COLORS = "battery_level_colors";
 
         /**
          * Whether to show the clock in the right or left position or show it in the center
@@ -6857,6 +6863,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(QS_HEADER_IMAGE_PADDING_SIDE);
             PRIVATE_SETTINGS.add(QS_HEADER_IMAGE_PADDING_TOP);
             PRIVATE_SETTINGS.add(QS_HEADER_IMAGE_URI);
+            PRIVATE_SETTINGS.add(BATTERY_LEVEL_COLORS);
         }
 
         /**
