@@ -60,7 +60,6 @@ public class PhoneStatusBarView extends FrameLayout implements TunerService.Tuna
             "system:" + "SB_PADDING_RIGHT";
 
     private DarkReceiver mBattery;
-    private ClockController mClockController;
     private int mRotationOrientation = -1;
     @Nullable
     private View mCutoutSpace;
@@ -111,7 +110,6 @@ public class PhoneStatusBarView extends FrameLayout implements TunerService.Tuna
     public void onFinishInflate() {
         super.onFinishInflate();
         mBattery = findViewById(R.id.battery);
-        mClockController = new ClockController(getContext(), this);
         mCutoutSpace = findViewById(R.id.cutout_space_view);
 
         updateResources();
@@ -124,7 +122,6 @@ public class PhoneStatusBarView extends FrameLayout implements TunerService.Tuna
         super.onAttachedToWindow();
         // Always have Battery meters in the status bar observe the dark/light modes.
         Dependency.get(DarkIconDispatcher.class).addDarkReceiver(mBattery);
-        mClockController.addDarkReceiver();
         if (updateDisplayParameters()) {
             updateLayoutForCutout();
         }
@@ -134,7 +131,6 @@ public class PhoneStatusBarView extends FrameLayout implements TunerService.Tuna
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(mBattery);
-        mClockController.removeDarkReceiver();
         mDisplayCutout = null;
     }
 
@@ -303,10 +299,6 @@ public class PhoneStatusBarView extends FrameLayout implements TunerService.Tuna
                 winRotation == Surface.ROTATION_0 ? -insets.first : 0;
         centeredAreaParams.rightMargin =
                 winRotation == Surface.ROTATION_0 ? -insets.second : 0;
-    }
-
-    public ClockController getClockController() {
-        return mClockController;
     }
     
     @Override

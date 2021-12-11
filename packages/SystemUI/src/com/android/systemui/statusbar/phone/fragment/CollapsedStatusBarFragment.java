@@ -295,7 +295,7 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         mStatusBarIconController.addIconGroup(mDarkIconManager);
         mEndSideContent = mStatusBar.findViewById(R.id.status_bar_end_side_content);
         mBatteryBar = mStatusBar.findViewById(R.id.battery_bar);
-        mClockController = mStatusBar.getClockController();
+        mClockController = new ClockController(getContext(), mStatusBar);
         mOngoingCallChip = mStatusBar.findViewById(R.id.ongoing_call_chip);
         mClockView = mStatusBar.findViewById(R.id.clock);
         showEndSideContent(false);
