@@ -934,27 +934,27 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver ,Tune
             // to load its emoji colored variant with the uFE0E flag
             // only use it when there is no batt icon showing
             String indication = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u26A1\uFE0E " : "";
+                    ? "\u26A1 " : "";
             String indication0 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
                     ? "" : "";
             String indication1 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u2623\uFE0E " : "";
+                    ? "\u2623 " : "";
             String indication2 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u2605\uFE0E " : "";
+                    ? "\u2605 " : "";
             String indication3 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u263a\uFE0E " : "";
+                    ? "\u263a " : "";
             String indication4 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u267d\uFE0E " : "";
+                    ? "\u267d " : "";
             String indication5 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u199f\uFE0E " : "";
+                    ? "\u199f " : "";
             String indication6 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u2741\uFE0E " : "";
+                    ? "\u2741 " : "";
             String indication7 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u274a\uFE0E " : "";
+                    ? "\u274a " : "";
             String indication8 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u2746\uFE0E " : "";
+                    ? "\u2746 " : "";
             String indication9 = mCharging && (getBatteryStyle() == BATTERY_STYLE_TEXT)
-                    ? "\u224b\uFE0E " : "";
+                    ? "\u224b " : "";
             if (ChargeSymbol == 1) {
                      mBatteryPercentView.setText(indication1 + PercentText);
                   } else if (ChargeSymbol == 2) {
