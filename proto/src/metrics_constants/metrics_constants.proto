@@ -7446,5 +7446,8 @@ message MetricsEvent {
     
     // Panel for Mobile Data
     PANEL_MOBILE_DATA = 4002;
+
+    // Pattern grid size
+    CHOOSE_LOCK_PATTERN_SIZE = 10001;
   }
 }
