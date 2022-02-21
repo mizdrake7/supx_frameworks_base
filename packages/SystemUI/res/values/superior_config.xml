@@ -73,4 +73,7 @@
           <item>255,33</item>
           -->
     </string-array>
+    
+    <!-- Udfps display mode provider class name -->
+    <string name="config_udfpsDisplayModeProviderComponent">com.android.systemui.biometrics.DummyUdfpsDisplayModeProvider</string>
 </resources>
