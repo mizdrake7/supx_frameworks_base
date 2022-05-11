@@ -208,5 +208,8 @@
     <java-symbol type="style" name="Animation.Toast.Translucent" />
     <java-symbol type="style" name="Animation.Toast.SlideRightLeft" />
     <java-symbol type="style" name="Animation.Toast.SlideLeftRight" />
+    
+    <!-- These are system packages exempted from privacy indicator -->
+    <java-symbol type="array" name="config_indicatorExemptedPackageNames" />
 
 </resources>
