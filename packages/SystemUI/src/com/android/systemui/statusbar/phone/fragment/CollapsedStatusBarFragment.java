@@ -46,6 +46,7 @@ import androidx.core.animation.Animator;
 
 import com.android.systemui.Dependency;
 import com.android.keyguard.KeyguardUpdateMonitor;
+import com.android.systemui.Dependency;
 import com.android.systemui.Dumpable;
 import com.android.systemui.R;
 import com.android.systemui.animation.Interpolators;
@@ -62,6 +63,7 @@ import com.android.systemui.statusbar.OperatorNameViewController;
 import com.android.systemui.statusbar.StatusBarState;
 import com.android.systemui.statusbar.events.SystemStatusAnimationCallback;
 import com.android.systemui.statusbar.events.SystemStatusAnimationScheduler;
+import com.android.systemui.statusbar.phone.ClockController;
 import com.android.systemui.statusbar.phone.NotificationIconAreaController;
 import com.android.systemui.statusbar.phone.PhoneStatusBarView;
 import com.android.systemui.statusbar.phone.StatusBarHideIconsForBouncerManager;
@@ -81,6 +83,9 @@ import com.android.systemui.util.CarrierConfigTracker;
 import com.android.systemui.util.CarrierConfigTracker.CarrierConfigChangedListener;
 import com.android.systemui.util.CarrierConfigTracker.DefaultDataSubscriptionChangedListener;
 import com.android.systemui.util.settings.SecureSettings;
+import com.android.systemui.tuner.TunerService;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -114,8 +119,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private final KeyguardStateController mKeyguardStateController;
     private final NotificationPanelViewController mNotificationPanelViewController;
     private LinearLayout mEndSideContent;
-    private View mClockView;
     private View mOngoingCallChip;
+    private View mClockView;
     private View mNotificationIconAreaInner;
     private int mDisabled1;
     private int mDisabled2;
@@ -140,6 +145,9 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private final StatusBarWindowStateController mStatusBarWindowStateController;
     private final KeyguardUpdateMonitor mKeyguardUpdateMonitor;
     private int mShowSBClockBg;
+
+    private ClockController mClockController;
+    private boolean mIsClockBlacklisted;
 
     private List<String> mBlockedIcons = new ArrayList<>();
     private Map<Startable, Startable.State> mStartableStates = new ArrayMap<>();
@@ -286,14 +294,16 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         updateBlockedIcons();
         mStatusBarIconController.addIconGroup(mDarkIconManager);
         mEndSideContent = mStatusBar.findViewById(R.id.status_bar_end_side_content);
-        mClockView = mStatusBar.findViewById(R.id.clock);
         mBatteryBar = mStatusBar.findViewById(R.id.battery_bar);
+        mClockController = mStatusBar.getClockController();
         mOngoingCallChip = mStatusBar.findViewById(R.id.ongoing_call_chip);
         mClockView = mStatusBar.findViewById(R.id.clock);
         showEndSideContent(false);
         showClock(false);
         initOperatorName();
         initNotificationIconArea();
+        Dependency.get(TunerService.class).addTunable(this, StatusBarIconController.ICON_HIDE_LIST);
+
         mSystemEventAnimator =
                 new StatusBarSystemEventAnimator(mEndSideContent, getResources());
         mCarrierConfigTracker.addCallback(mCarrierConfigCallback);
@@ -391,6 +401,14 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
 
     @Override
     public void onTuningChanged(String key, String newValue) {
+    
+        boolean wasClockBlacklisted = mIsClockBlacklisted;
+        mIsClockBlacklisted = StatusBarIconController.getIconHideList(
+                getContext(), newValue).contains("clock");
+        if (wasClockBlacklisted && !mIsClockBlacklisted) {
+            showClock(false);
+        }
+
         switch (key) {
             case STATUSBAR_CLOCK_CHIP:
                 mShowSBClockBg = 
@@ -486,8 +504,9 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
 
         // The clock may have already been hidden, but we might want to shift its
         // visibility to GONE from INVISIBLE or vice versa
-        if ((diff1 & DISABLE_CLOCK) != 0 || mClockView.getVisibility() != clockHiddenMode()) {
-            if ((state1 & DISABLE_CLOCK) != 0) {
+        if ((diff1 & DISABLE_CLOCK) != 0 ||
+                mClockController.getClock().getVisibility() != clockHiddenMode()) {
+            if ((state1 & DISABLE_CLOCK) != 0 || mIsClockBlacklisted) {
                 hideClock(animate);
             } else {
                 showClock(animate);
@@ -506,7 +525,11 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
                         && headsUpVisible)) {
             state |= DISABLE_NOTIFICATION_ICONS;
             state |= DISABLE_SYSTEM_INFO;
-            state |= DISABLE_CLOCK;
+            View clockView = mClockController.getClock();
+            boolean isRightClock = clockView.getId() == R.id.clock_right;
+            if (!isRightClock) {
+                state |= DISABLE_CLOCK;
+            }
         }
 
         if (mOngoingCallController.hasOngoingCall()) {
@@ -600,11 +623,11 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     }
 
     private void hideClock(boolean animate) {
-        animateHiddenState(mClockView, clockHiddenMode(), animate);
+        animateHiddenState(mClockController.getClock(), clockHiddenMode(), animate);
     }
 
     private void showClock(boolean animate) {
-        animateShow(mClockView, animate);
+        animateShow(mClockController.getClock(), animate);
     }
 
     /** Hides the ongoing call chip. */
@@ -623,7 +646,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
      */
     private int clockHiddenMode() {
         if (!mShadeExpansionStateManager.isClosed() && !mKeyguardStateController.isShowing()
-                && !mStatusBarStateController.isDozing()) {
+                && !mStatusBarStateController.isDozing()
+                && mClockController.getClock().shouldBeVisible()) {
             return View.INVISIBLE;
         }
         return View.GONE;

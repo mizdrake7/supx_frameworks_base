@@ -215,4 +215,7 @@
     <string name="onthego_service_toggle">Automatically restart service</string>
     <string name="onthego_channel_name">Main</string>
     <string name="global_action_onthego">On-The-Go</string>
+
+    <!-- Name of the clock in status bar [CHAR LIMIT=30] -->
+    <string name="clock">Clock</string>
 </resources>
