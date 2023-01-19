@@ -235,5 +235,6 @@ public class SecureSettings {
         Settings.Secure.DOZE_SINGLE_TAP_GESTURE_AMBIENT,
         Settings.Secure.SHOW_WIFI_STANDARD_ICON,
         Settings.Secure.DOZE_FOR_NOTIFICATIONS,
+        Settings.Secure.MEDIA_CONTROLS_ALWAYS_SHOW_TIME,
     };
 }
