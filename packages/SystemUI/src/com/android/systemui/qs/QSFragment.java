@@ -276,7 +276,9 @@ public class QSFragment extends LifecycleFragment implements QS, CommandQueue.Ca
             setQsVisible(savedInstanceState.getBoolean(EXTRA_VISIBLE));
             setExpanded(savedInstanceState.getBoolean(EXTRA_EXPANDED));
             setListening(savedInstanceState.getBoolean(EXTRA_LISTENING));
-            setEditLocation(view);
+            if (view != null) {
+                setEditLocation(view);
+            }
             mQSCustomizerController.restoreInstanceState(savedInstanceState);
             if (mQsExpanded) {
                 mQSPanelController.getTileLayout().restoreInstanceState(savedInstanceState);
@@ -406,7 +408,10 @@ public class QSFragment extends LifecycleFragment implements QS, CommandQueue.Ca
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        setEditLocation(getView());
+        View editView = getView();
+        if (editView != null) {
+            setEditLocation(editView);
+        }
         if (newConfig.getLayoutDirection() != mLayoutDirection) {
             mLayoutDirection = newConfig.getLayoutDirection();
             if (mQSAnimator != null) {
