@@ -239,5 +239,6 @@ public class SystemSettingsValidators {
         VALIDATORS.put(System.TOAST_ANIMATION, ANY_INTEGER_VALIDATOR);
         VALIDATORS.put(System.BATTERY_LEVEL_COLORS, BOOLEAN_VALIDATOR);
         VALIDATORS.put(System.RINGTONE_VIBRATION_PATTERN, new InclusiveIntegerRangeValidator(0, 4));
+        VALIDATORS.put(System.STATUS_BAR_BRIGHTNESS_CONTROL, BOOLEAN_VALIDATOR);
     }
 }
