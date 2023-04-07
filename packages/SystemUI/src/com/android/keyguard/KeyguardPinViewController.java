@@ -20,13 +20,10 @@ import static com.android.keyguard.KeyguardAbsKeyInputView.MINIMUM_PASSWORD_LENG
 
 import android.os.AsyncTask;
 import android.os.UserHandle;
-import android.view.View;
 import android.provider.Settings;
+import android.view.View;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
-
-import androidx.constraintlayout.helper.widget.Flow;
-import android.provider.Settings;
 
 import com.android.internal.util.LatencyTracker;
 import com.android.internal.widget.LockPatternUtils;
@@ -56,7 +53,10 @@ public class KeyguardPinViewController
 
     private KeyguardSecurityCallback mKeyguardSecurityCallback;
 
-    private static List<Integer> sNumbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 0);
+    private boolean mScramblePin;
+
+    private List<Integer> mNumbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 0);
+    private final List<Integer> mDefaultNumbers = List.of(mNumbers.toArray(new Integer[0]));
 
     protected KeyguardPinViewController(KeyguardPINView view,
             KeyguardUpdateMonitor keyguardUpdateMonitor,
@@ -88,29 +88,6 @@ public class KeyguardPinViewController
             });
         }
 
-        boolean scramblePin = Settings.System.getInt(getContext().getContentResolver(),
-                Settings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0) == 1;
-
-        if (scramblePin) {
-            Collections.shuffle(sNumbers);
-            // get all children who are NumPadKey's
-            ConstraintLayout container = (ConstraintLayout) mView.findViewById(R.id.pin_container);
-
-            List<NumPadKey> views = new ArrayList<NumPadKey>();
-            for (int i = 0; i < container.getChildCount(); i++) {
-                View view = container.getChildAt(i);
-                if (view.getClass() == NumPadKey.class) {
-                    views.add((NumPadKey) view);
-                }
-            }
-
-            // reset the digits in the views
-            for (int i = 0; i < sNumbers.size(); i++) {
-                NumPadKey view = views.get(i);
-                view.setDigit(sNumbers.get(i));
-            }
-        }
-
         boolean quickUnlock = (Settings.System.getIntForUser(getContext().getContentResolver(),
                 Settings.System.LOCKSCREEN_QUICK_UNLOCK_CONTROL, 0, UserHandle.USER_CURRENT) == 1);
 
@@ -129,10 +106,48 @@ public class KeyguardPinViewController
         mPostureController.addCallback(mPostureCallback);
     }
 
+    private void updatePinScrambling() {
+        boolean scramblePin = Settings.System.getIntForUser(getContext().getContentResolver(),
+                Settings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0,
+                UserHandle.USER_CURRENT) == 1;
+
+        if (scramblePin || scramblePin != mScramblePin) {
+            mScramblePin = scramblePin;
+            if (scramblePin) {
+                Collections.shuffle(mNumbers);
+            } else {
+                mNumbers = new ArrayList<>(mDefaultNumbers);
+            }
+
+            // get all children who are NumPadKey's
+            ConstraintLayout container = (ConstraintLayout) mView.findViewById(R.id.pin_container);
+
+            List<NumPadKey> views = new ArrayList<NumPadKey>();
+            for (int i = 0; i < container.getChildCount(); i++) {
+                View view = container.getChildAt(i);
+                if (view.getClass() == NumPadKey.class) {
+                    views.add((NumPadKey) view);
+                }
+            }
+
+            // reset the digits in the views
+            for (int i = 0; i < mNumbers.size(); i++) {
+                NumPadKey view = views.get(i);
+                view.setDigit(mNumbers.get(i));
+            }
+        }
+    }
+
     @Override
     protected void onViewDetached() {
         super.onViewDetached();
         mPostureController.removeCallback(mPostureCallback);
+    }
+
+    @Override
+    public void startAppearAnimation() {
+        updatePinScrambling();
+        mView.startAppearAnimation();
     }
 
     @Override
