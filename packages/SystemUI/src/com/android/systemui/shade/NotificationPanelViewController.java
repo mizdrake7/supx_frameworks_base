@@ -2611,7 +2611,7 @@ public final class NotificationPanelViewController implements Dumpable {
         float finalAlpha = alpha > 0.84f ? alpha : 0f;
         mNotificationStackScrollLayoutController.setAlpha(finalAlpha);
         if (mBarState != StatusBarState.KEYGUARD && !isFullyCollapsed() && !isPanelVisibleBecauseOfHeadsUp()) {
-            mCentralSurfaces.updateDismissAllVisibility(true);
+            mCentralSurfaces.updateDismissAllVisibility(mReTickerVisible != null && mReTickerVisible ? false : true);
         }
     }
 
@@ -5616,6 +5616,7 @@ public final class NotificationPanelViewController implements Dumpable {
 
         if (mReTickerComeback.getVisibility() == View.VISIBLE) {
             retickerDismiss();
+            mReTickerVisible = false;
         }
 
         NotificationEntry topEntry = mHeadsUpManager.getTopEntry();
@@ -5673,21 +5674,12 @@ public final class NotificationPanelViewController implements Dumpable {
                     }
                     retickerDismiss();
                     reTickerViewVisibility();
-                }
-            });
-        }
-        retickerAnimate();
-    }
-
-    private Drawable getNotificationIcon(String pkgname, Notification notification) {
-        Drawable icon = null;
-        try {
-            if ("com.android.systemui".equals(pkgname)) {
-                icon = mView.getContext().getDrawable(notification.icon);
-            } else {
-                icon = mView.getContext().getPackageManager().getApplicationIcon(pkgname);
+                    mReTickerVisible = false;
+                });
             }
-        } catch (NameNotFoundException e) {
+        } else {
+            retickerDismiss();
+            mReTickerVisible = false;
         }
         return icon;
     }
@@ -5695,6 +5687,7 @@ public final class NotificationPanelViewController implements Dumpable {
     protected void reTickerViewVisibility() {
         if (!mReTickerStatus) {
             retickerDismiss();
+            mReTickerVisible = false;
             return;
         }
 
@@ -5767,7 +5760,8 @@ public final class NotificationPanelViewController implements Dumpable {
                 if (mIsDismissRequested) {
                     hasNewEvents = false;
                     // Dismiss was requested during animation, trigger dismiss animation
-                    retickerDismiss();
+                    retickerDismiss(); 
+                    mReTickerVisible = false;
                 }
             }
         });
