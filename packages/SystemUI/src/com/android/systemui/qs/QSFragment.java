@@ -425,9 +425,11 @@ public class QSFragment extends LifecycleFragment implements QS, CommandQueue.Ca
     }
 
     @Override
-    public void setFancyClipping(int top, int bottom, int cornerRadius, boolean visible) {
+    public void setFancyClipping(int leftInset, int top, int rightInset, int bottom,
+            int cornerRadius, boolean visible, boolean fullWidth) {
         if (getView() instanceof QSContainerImpl) {
-            ((QSContainerImpl) getView()).setFancyClipping(top, bottom, cornerRadius, visible);
+            ((QSContainerImpl) getView()).setFancyClipping(leftInset, top, rightInset, bottom,
+                    cornerRadius, visible, fullWidth);
         }
     }
 
