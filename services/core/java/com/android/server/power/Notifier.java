@@ -227,7 +227,7 @@ public class Notifier {
                     + ", ownerUid=" + ownerUid + ", ownerPid=" + ownerPid
                     + ", workSource=" + workSource);
         }
-        notifyWakeLockListener(callback, true);
+        notifyWakeLockListener(callback, tag, true);
         final int monitorType = getBatteryStatsWakeLockMonitorType(flags);
         if (monitorType >= 0) {
             try {
@@ -354,7 +354,7 @@ public class Notifier {
                     + ", ownerUid=" + ownerUid + ", ownerPid=" + ownerPid
                     + ", workSource=" + workSource);
         }
-        notifyWakeLockListener(callback, false);
+        notifyWakeLockListener(callback, tag, false);
         final int monitorType = getBatteryStatsWakeLockMonitorType(flags);
         if (monitorType >= 0) {
             try {
@@ -905,13 +905,13 @@ public class Notifier {
         return enabled && dndOff;
     }
 
-    private void notifyWakeLockListener(IWakeLockCallback callback, boolean isEnabled) {
+    private void notifyWakeLockListener(IWakeLockCallback callback, String tag, boolean isEnabled) {
         if (callback != null) {
             mHandler.post(() -> {
                 try {
                     callback.onStateChanged(isEnabled);
                 } catch (RemoteException e) {
-                    throw new IllegalArgumentException("Wakelock.mCallback is already dead.", e);
+                    Slog.e(TAG, "Wakelock.mCallback [" + tag + "] is already dead.", e);
                 }
             });
         }
