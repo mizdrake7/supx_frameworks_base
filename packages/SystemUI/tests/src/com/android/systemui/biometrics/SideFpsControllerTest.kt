@@ -63,7 +63,6 @@ import com.android.systemui.keyguard.data.repository.FakeDeviceEntryFingerprintA
 import com.android.systemui.keyguard.data.repository.FakeKeyguardBouncerRepository
 import com.android.systemui.keyguard.domain.interactor.AlternateBouncerInteractor
 import com.android.systemui.plugins.statusbar.StatusBarStateController
-import com.android.systemui.recents.OverviewProxyService
 import com.android.systemui.statusbar.policy.KeyguardStateController
 import com.android.systemui.util.concurrency.FakeExecutor
 import com.android.systemui.util.time.FakeSystemClock
@@ -105,7 +104,6 @@ class SideFpsControllerTest : SysuiTestCase() {
     @Mock lateinit var activityTaskManager: ActivityTaskManager
     @Mock lateinit var sideFpsView: View
     @Mock lateinit var displayManager: DisplayManager
-    @Mock lateinit var overviewProxyService: OverviewProxyService
     @Mock lateinit var handler: Handler
     @Mock lateinit var dumpManager: DumpManager
     @Captor lateinit var overlayCaptor: ArgumentCaptor<View>
@@ -240,7 +238,6 @@ class SideFpsControllerTest : SysuiTestCase() {
                 fingerprintManager,
                 windowManager,
                 activityTaskManager,
-                overviewProxyService,
                 displayManager,
                 executor,
                 handler,
@@ -609,18 +606,6 @@ class SideFpsControllerTest : SysuiTestCase() {
 
         // THEN side fps UI is hidden
         verify(windowManager).removeView(any())
-    }
-
-    private fun hidesWithTaskbar(visible: Boolean) {
-        overlayController.show(SENSOR_ID, REASON_UNKNOWN)
-        executor.runAllReady()
-
-        sideFpsController.overviewProxyListener.onTaskbarStatusUpdated(true, false)
-        executor.runAllReady()
-
-        verify(windowManager).addView(any(), any())
-        verify(windowManager, never()).removeView(any())
-        verify(sideFpsView).visibility = if (visible) View.VISIBLE else View.GONE
     }
 
     /**
