@@ -546,6 +546,7 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
 
         return mKeyguardStateController.isShowing()
                 && !primaryBouncerIsOrWillBeShowing()
+                && !mKeyguardStateController.isKeyguardGoingAway()
                 && isUserTrackingStarted
                 && !hideBouncerOverDream
                 && !mKeyguardStateController.isOccluded()
