@@ -107,6 +107,7 @@ public class SystemSettings {
         Settings.System.QS_HEADER_IMAGE_PADDING_SIDE,
         Settings.System.QS_HEADER_IMAGE_PADDING_TOP,
         Settings.System.QS_HEADER_IMAGE_URI,
-        Settings.System.QS_TILE_LABEL_SIZE
+        Settings.System.QS_TILE_LABEL_SIZE,
+        Settings.System.QS_TILE_SECONDARY_LABEL_SIZE
     };
 }
