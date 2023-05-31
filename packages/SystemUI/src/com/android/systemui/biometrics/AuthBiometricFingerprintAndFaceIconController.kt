@@ -49,6 +49,13 @@ class AuthBiometricFingerprintAndFaceIconController(
             @BiometricState oldState: Int,
             @BiometricState newState: Int
     ): Int? = when (newState) {
+        STATE_AUTHENTICATED -> {
+           if (oldState == STATE_PENDING_CONFIRMATION) {
+               R.raw.fingerprint_dialogue_unlocked_to_checkmark_success_lottie
+           } else {
+               super.getAnimationForTransition(oldState, newState)
+           }
+        }
         STATE_PENDING_CONFIRMATION -> {
             if (oldState == STATE_ERROR || oldState == STATE_HELP) {
                 R.raw.fingerprint_dialogue_error_to_unlock_lottie
