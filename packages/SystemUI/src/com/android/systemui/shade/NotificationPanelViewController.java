@@ -2611,7 +2611,7 @@ public final class NotificationPanelViewController implements Dumpable {
         float finalAlpha = alpha > 0.84f ? alpha : 0f;
         mNotificationStackScrollLayoutController.setAlpha(finalAlpha);
         if (mBarState != StatusBarState.KEYGUARD && !isFullyCollapsed() && !isPanelVisibleBecauseOfHeadsUp()) {
-            mCentralSurfaces.updateDismissAllVisibility(mReTickerVisible != null && mReTickerVisible ? false : true);
+            mCentralSurfaces.updateDismissAllVisibility(true);
         }
     }
 
@@ -5649,28 +5649,28 @@ public final class NotificationPanelViewController implements Dumpable {
         Drawable icon = getNotificationIcon(pkgname, notification);
         String content = notification.extras.getString("android.text");
 
-        if (TextUtils.isEmpty(content)) {
-            return;
-        }
+            String reTickerContent = content;
+            String reTickerAppName = notification.extras.getString("android.title");
+            PendingIntent reTickerIntent = notification.contentIntent;
+            String mergedContentText = reTickerAppName + " " + reTickerContent;
 
-        String reTickerContent = content;
-        String reTickerAppName = notification.extras.getString("android.title");
-        String mergedContentText = reTickerAppName + " " + reTickerContent;
+            mReTickerComebackIcon.setImageDrawable(icon);
 
-        mReTickerComebackIcon.setImageDrawable(icon);
-        mReTickerComeback.setBackground(getRetickerBackgroundDrawable(pkgname, notification.color));
-        mReTickerContentTV.setText(mergedContentText);
-        mReTickerContentTV.setTextAppearance(mView.getContext(), R.style.TextAppearance_Notifications_reTicker);
-        mReTickerContentTV.setSelected(true);
+            Drawable dw = getRetickerBackgroundDrawable(pkgname, notification.color);
+            mReTickerComeback.setBackground(dw);
+            mReTickerContentTV.setText(mergedContentText);
+            mReTickerContentTV.setTextAppearance(mView.getContext(), R.style.TextAppearance_Notifications_reTicker);
+            mReTickerContentTV.setSelected(true);
 
-        PendingIntent reTickerIntent = notification.contentIntent;
-        if (reTickerIntent != null) {
-            mReTickerComeback.setOnClickListener(v -> {
-                final GameSpaceManager gameSpace = mCentralSurfaces.getGameSpaceManager();
-                if (gameSpace == null || !gameSpace.isGameActive()) {
-                    try {
-                        reTickerIntent.send();
-                    } catch (PendingIntent.CanceledException e) {
+            retickerAnimate();
+
+            if (reTickerIntent != null) {
+                mReTickerComeback.setOnClickListener(v -> {
+                    final GameSpaceManager gameSpace = mCentralSurfaces.getGameSpaceManager();
+                    if (gameSpace == null || !gameSpace.isGameActive()) {
+                        try {
+                            reTickerIntent.send();
+                        } catch (PendingIntent.CanceledException e) {}
                     }
                     retickerDismiss();
                     reTickerViewVisibility();
@@ -5717,8 +5717,7 @@ public final class NotificationPanelViewController implements Dumpable {
     }
 
     public void retickerAnimate() {
-        hasNewEvents = true;
-        closeQsIfPossible();
+        mCentralSurfaces.updateDismissAllVisibility(false);
 
         if (mIsAnimatingTicker) {
             return; // Animation is already running
