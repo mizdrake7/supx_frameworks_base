@@ -121,11 +121,18 @@ public class QSCustomizer extends LinearLayout {
         mQs = qs;
     }
 
+    private void reloadAdapterTileHeight(@Nullable RecyclerView.Adapter adapter) {
+        if (adapter instanceof TileAdapter) {
+            ((TileAdapter) adapter).reloadTileHeight();
+        }
+    }
+
     /** Animate and show QSCustomizer panel.
      * @param x,y Location on screen of {@code edit} button to determine center of animation.
      */
     void show(int x, int y, TileAdapter tileAdapter) {
         if (!isShown) {
+            reloadAdapterTileHeight(tileAdapter);
             mRecyclerView.getLayoutManager().scrollToPosition(0);
             int[] containerLocation = findViewById(R.id.customize_container).getLocationOnScreen();
             mX = x - containerLocation[0];
@@ -143,6 +150,7 @@ public class QSCustomizer extends LinearLayout {
 
     void showImmediately() {
         if (!isShown) {
+            reloadAdapterTileHeight(mRecyclerView.getAdapter());
             mRecyclerView.getLayoutManager().scrollToPosition(0);
             setVisibility(VISIBLE);
             mClipper.cancelAnimator();
