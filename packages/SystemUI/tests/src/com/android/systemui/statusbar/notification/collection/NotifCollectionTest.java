@@ -1673,11 +1673,21 @@ public class NotifCollectionTest extends SysuiTestCase {
     }
 
     @Test
+    public void testCanDismissOtherNotificationChildren() {
+        // GIVEN an ongoing notification
+        final NotificationEntry container = new NotificationEntryBuilder()
+                .setGroup(mContext, "group")
+                .build();
+
+        // THEN its children are dismissible
+        assertTrue(mCollection.shouldAutoDismissChildren(
+                container, container.getSbn().getGroupKey()));
+    }
+
+    @Test
     public void testCannotDismissOngoingNotificationChildren() {
         // GIVEN an ongoing notification
         final NotificationEntry container = new NotificationEntryBuilder()
-                .setPkg(TEST_PACKAGE)
-                .setId(47)
                 .setGroup(mContext, "group")
                 .setFlag(mContext, FLAG_ONGOING_EVENT, true)
                 .build();
@@ -1691,7 +1701,24 @@ public class NotifCollectionTest extends SysuiTestCase {
     public void testCannotDismissNoClearNotifications() {
         // GIVEN an no-clear notification
         final NotificationEntry container = new NotificationEntryBuilder()
+                .setGroup(mContext, "group")
                 .setFlag(mContext, FLAG_NO_CLEAR, true)
+                .build();
+
+        // THEN its children are not dismissible
+        assertFalse(mCollection.shouldAutoDismissChildren(
+                container, container.getSbn().getGroupKey()));
+    }
+
+    @Test
+    public void testCannotDismissPriorityConversations() {
+        // GIVEN an no-clear notification
+        NotificationChannel channel =
+                new NotificationChannel("foo", "Foo", NotificationManager.IMPORTANCE_HIGH);
+        channel.setImportantConversation(true);
+        final NotificationEntry container = new NotificationEntryBuilder()
+                .setGroup(mContext, "group")
+                .setChannel(channel)
                 .build();
 
         // THEN its children are not dismissible
@@ -1703,8 +1730,6 @@ public class NotifCollectionTest extends SysuiTestCase {
     public void testCanDismissFgsNotificationChildren() {
         // GIVEN an FGS but not ongoing notification
         final NotificationEntry container = new NotificationEntryBuilder()
-                .setPkg(TEST_PACKAGE)
-                .setId(47)
                 .setGroup(mContext, "group")
                 .setFlag(mContext, FLAG_FOREGROUND_SERVICE, true)
                 .build();
