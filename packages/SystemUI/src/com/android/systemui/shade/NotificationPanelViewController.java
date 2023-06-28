@@ -1800,6 +1800,7 @@ public final class NotificationPanelViewController implements Dumpable {
 
         mWillPlayDelayedDozeAmountAnimation = willPlay;
         mWakeUpCoordinator.logDelayingClockWakeUpAnimation(willPlay);
+        mKeyguardMediaController.setDozeWakeUpAnimationWaiting(willPlay);
 
         // Once changing this value, see if we should move the clock.
         positionClockAndNotifications();
