@@ -53,6 +53,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.animation.TimeInterpolator;
 import android.animation.PropertyValuesHolder;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.DecelerateInterpolator;
@@ -91,6 +92,7 @@ import android.os.UserManager;
 import android.os.VibrationEffect;
 import android.provider.Settings;
 import android.service.notification.StatusBarNotification;
+import android.telecom.TelecomManager;
 import android.text.TextUtils;
 import android.transition.ChangeBounds;
 import android.transition.Transition;
@@ -334,8 +336,6 @@ public final class NotificationPanelViewController implements Dumpable {
             "system:" + Settings.System.RETICKER_STATUS;
     private static final String RETICKER_COLORED =
             "system:" + Settings.System.RETICKER_COLORED;
-    private static final String QS_UI_STYLE =
-            "system:" + Settings.System.QS_UI_STYLE;
 
     private static final Rect M_DUMMY_DIRTY_RECT = new Rect(0, 0, 1, 1);
     private static final Rect EMPTY_RECT = new Rect();
@@ -683,21 +683,32 @@ public final class NotificationPanelViewController implements Dumpable {
     private int mGoneToDreamingTransitionTranslationY;
     private int mLockscreenToOccludedTransitionTranslationY;
 
-    /*Reticker*/
-    private LinearLayout mReTickerComeback;
-    private ImageView mReTickerComebackIcon;
-    private TextView mReTickerContentTV;
+    /* Reticker static */
+    public static final String ANDROID_DIALER = "com.android.dialer";
+    public static final String GOOGLE_DIALER = "com.google.android.dialer";
+    public static final String SYSTEM_UI = "com.android.systemui";
+
+    /* Reticker */
+    private LinearLayout mRetickerView;
+    private ImageView mRetickerIconView;
+    private TextView mRetickerTextView;
     private NotificationStackScrollLayout mNotificationStackScroller;
+    private AnimatorSet mRetickerAnimatorSet;
+    private TelecomManager telecomManager;
+
+    /* Reticker notification entry */
+    private NotificationEntry topEntry;
+    private String pkgname;
+    private Notification notification;
+
+    /* Reticker status */
     private boolean mReTickerStatus;
     private boolean mReTickerColored;
     private boolean mReTickerLandscapeOnly;
     private boolean mIsAnimatingTicker = false;
-    private boolean mIsDismissRequested = false;
     private boolean hasNewEvents = false;
 
     private boolean mBlockedGesturalNavigation = false;
-    
-    private boolean mIsA11Style;
 
     /**
      * For PanelView fling perflock call
@@ -1048,6 +1059,7 @@ public final class NotificationPanelViewController implements Dumpable {
         mAlternateBouncerInteractor = alternateBouncerInteractor;
         dumpManager.registerDumpable(this);
         mPerf = new BoostFramework();
+        telecomManager = (TelecomManager) context.getSystemService(Context.TELECOM_SERVICE);
     }
 
     private void unlockAnimationFinished() {
@@ -1145,9 +1157,9 @@ public final class NotificationPanelViewController implements Dumpable {
         mAmbientText = (AmbientText) mView.findViewById(R.id.text_container);
         mAmbientCustomImage = (AmbientCustomImage) mView.findViewById(R.id.image_container);
 
-        mReTickerComeback = mView.findViewById(R.id.ticker_comeback);
-        mReTickerComebackIcon = mView.findViewById(R.id.ticker_comeback_icon);
-        mReTickerContentTV = mView.findViewById(R.id.ticker_content);
+        mRetickerView = mView.findViewById(R.id.ticker_comeback);
+        mRetickerIconView = mView.findViewById(R.id.ticker_comeback_icon);
+        mRetickerTextView = mView.findViewById(R.id.ticker_content);
         mNotificationStackScroller = mView.findViewById(R.id.notification_stack_scroller);
 
         initBottomArea();
@@ -1329,7 +1341,6 @@ public final class NotificationPanelViewController implements Dumpable {
 
         mSplitShadeFullTransitionDistance =
                 mResources.getDimensionPixelSize(R.dimen.split_shade_full_transition_distance);
-        mCentralSurfaces.updateDismissAllVisibility(mBarState != StatusBarState.KEYGUARD && !isFullyCollapsed() && !isPanelVisibleBecauseOfHeadsUp());
     }
 
     private void onSplitShadeEnabledChanged() {
@@ -2609,7 +2620,7 @@ public final class NotificationPanelViewController implements Dumpable {
         }
         float finalAlpha = alpha > 0.84f ? alpha : 0f;
         mNotificationStackScrollLayoutController.setAlpha(finalAlpha);
-        if (mBarState != StatusBarState.KEYGUARD && !isFullyCollapsed() && !isPanelVisibleBecauseOfHeadsUp()) {
+        if (mBarState != StatusBarState.KEYGUARD && !isFullyCollapsed() && !isPanelVisibleBecauseOfHeadsUp() && !mIsAnimatingTicker) {
             mCentralSurfaces.updateDismissAllVisibility(true);
         }
     }
@@ -4847,7 +4858,6 @@ public final class NotificationPanelViewController implements Dumpable {
             mTunerService.addTunable(this, DOUBLE_TAP_SLEEP_LOCKSCREEN);
             mTunerService.addTunable(this, RETICKER_STATUS);
             mTunerService.addTunable(this, RETICKER_COLORED);
-            mTunerService.addTunable(this, QS_UI_STYLE);
             // Theme might have changed between inflating this view and attaching it to the
             // window, so
             // force a call to onThemeChanged
@@ -4886,9 +4896,6 @@ public final class NotificationPanelViewController implements Dumpable {
                 case RETICKER_COLORED:
                     mReTickerColored =
                             TunerService.parseIntegerSwitch(newValue, false);
-                    break;
-                case QS_UI_STYLE:
-                    mIsA11Style = TunerService.parseInteger(newValue, 0) == 1;
                     break;
                 default:
                     break;
@@ -5606,96 +5613,56 @@ public final class NotificationPanelViewController implements Dumpable {
         alarmManager.cancel(sender);
     }
 
-    /* reTicker */
-    public void reTickerView(boolean visibility) {
-        if (!mReTickerStatus || !visibility || mReTickerLandscapeOnly && !isLandscape()) {
-            retickerDismiss();
+    public void updateReticker(NotificationEntry topEntry) {
+        if (!mReTickerStatus) return;
+        this.topEntry = topEntry;
+        if (topEntry == null) {
             return;
         }
-
-        if (mReTickerComeback.getVisibility() == View.VISIBLE) {
-            retickerDismiss();
-        }
-
-        NotificationEntry topEntry = mHeadsUpManager.getTopEntry();
-        if (topEntry == null || topEntry.getRow() == null || topEntry.getRow().getEntry() == null) {
-            return;
-        }
-
-        StatusBarNotification sbn = topEntry.getRow().getEntry().getSbn();
-        Notification notification = sbn.getNotification();
-        String pkgname = sbn.getPackageName();
-
-        switch (pkgname) {
-            case "com.google.android.dialer":
-            case "com.android.dialer":
-                return;
-            default:
-                break;
-        }
-
+        this.notification = topEntry.getSbn().getNotification();
+        this.pkgname = topEntry.getSbn().getPackageName();
         if (getExpandedFraction() != 1) {
-            prepareReticker(sbn, notification, pkgname);
-        } else {
-            retickerDismiss();
+            mNotificationStackScroller.setVisibility(View.GONE);
+            prepareReticker();
         }
     }
 
-    private void prepareReticker(StatusBarNotification sbn, Notification notification, String pkgname) {
-        mNotificationStackScroller.setVisibility(View.GONE);
+    private boolean isDialerApp() {
+        return GOOGLE_DIALER.equals(pkgname) || ANDROID_DIALER.equals(pkgname);
+    }
 
-        Drawable icon = getNotificationIcon(pkgname, notification);
+    private void prepareReticker() {
+        Drawable icon = getNotificationIcon();
         String content = notification.extras.getString("android.text");
-
-            String reTickerContent = content;
-            String reTickerAppName = notification.extras.getString("android.title");
-            PendingIntent reTickerIntent = notification.contentIntent;
-            String mergedContentText = reTickerAppName + " " + reTickerContent;
-
-            mReTickerComebackIcon.setImageDrawable(icon);
-
-            Drawable dw = getRetickerBackgroundDrawable(pkgname, notification.color);
-            mReTickerComeback.setBackground(dw);
-            mReTickerContentTV.setText(mergedContentText);
-            mReTickerContentTV.setTextAppearance(mView.getContext(), R.style.TextAppearance_Notifications_reTicker);
-            mReTickerContentTV.setSelected(true);
-
-            retickerAnimate();
-
-            if (reTickerIntent != null) {
-                mReTickerComeback.setOnClickListener(v -> {
-                    final GameSpaceManager gameSpace = mCentralSurfaces.getGameSpaceManager();
-                    if (gameSpace == null || !gameSpace.isGameActive()) {
-                        try {
-                            reTickerIntent.send();
-                        } catch (PendingIntent.CanceledException e) {}
-                    }
-                    retickerDismiss();
-                    reTickerViewVisibility();
-                });
-            }
-        } else {
-            retickerDismiss();
-        }
-        return icon;
-    }
-
-    protected void reTickerViewVisibility() {
-        if (!mReTickerStatus) {
-            retickerDismiss();
+        if (TextUtils.isEmpty(content)) {
             return;
         }
+        String reTickerContent = content;
+        String reTickerAppName = notification.extras.getString("android.title");
+        String mergedContentText = reTickerAppName + " " + reTickerContent;
+        mRetickerIconView.setImageDrawable(icon);
+        mRetickerView.setBackground(getRetickerBackgroundDrawable(notification.color));
+        mRetickerTextView.setText(mergedContentText);
+        mRetickerTextView.setTextAppearance(mView.getContext(), R.style.TextAppearance_Notifications_reTicker);
+        mRetickerTextView.setSelected(true);
+        setupRetickerListeners();
+        showReticker();
+    }
 
-        mNotificationStackScroller.setVisibility(getExpandedFraction() == 0 ? View.GONE : View.VISIBLE);
-        if (getExpandedFraction() > 0) {
-            mReTickerComeback.setVisibility(View.GONE);
-        }
-
-        if (mReTickerComeback.getVisibility() == View.VISIBLE) {
-            mReTickerComeback.getViewTreeObserver().addOnComputeInternalInsetsListener(mInsetsListener);
+    private Drawable getRetickerBackgroundDrawable(int notificationColor) {
+        Drawable dw = mView.getContext().getDrawable(R.drawable.reticker_background);
+        if (mReTickerColored) {
+            int col;
+            try {
+                col = Color.parseColor(pkgname);
+            } catch (Exception e) {
+                col = notificationColor;
+            }
+            dw.setTint(col);
         } else {
-            mReTickerComeback.getViewTreeObserver().removeOnComputeInternalInsetsListener(mInsetsListener);
+            dw.setTintList(null);
         }
+        return dw;
     }
 
     private long getNewDuration(AnimatorSet previousAnimator, boolean hasNewEvents) {
@@ -5711,126 +5678,122 @@ public final class NotificationPanelViewController implements Dumpable {
         return newDuration;
     }
 
-    public void retickerAnimate() {
-        closeQsIfPossible();
-        mCentralSurfaces.updateDismissAllVisibility(false);
-
-        if (mIsAnimatingTicker) {
-            return; // Animation is already running
-        }
-
-        mIsAnimatingTicker = true;
-        mIsDismissRequested = false;
-
-        mReTickerComeback.setScaleX(0f);
-        mReTickerComeback.setScaleY(0f);
-        mReTickerComeback.setAlpha(0f);
-        mReTickerComeback.setTranslationY(mReTickerComeback.getHeight() / 4f);
-
-        PropertyValuesHolder scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 0f, 1f);
-        PropertyValuesHolder scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 0f, 1f);
-        PropertyValuesHolder alpha = PropertyValuesHolder.ofFloat(View.ALPHA, 0f, 1f);
-        PropertyValuesHolder translationY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, mReTickerComeback.getHeight() / 4f, 0f);
-
-        ObjectAnimator scaleXAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, scaleX);
-        ObjectAnimator scaleYAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, scaleY);
-        ObjectAnimator alphaAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, alpha);
-        ObjectAnimator translationYAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, translationY);
-
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(scaleXAnimator, scaleYAnimator, alphaAnimator, translationYAnimator);
-        long animationDuration = getNewDuration(animatorSet, hasNewEvents);
-        animatorSet.setDuration(animationDuration);
-        animatorSet.setInterpolator(new DecelerateInterpolator());
-
-        animatorSet.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationStart(Animator animation) {
-                mReTickerComeback.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                mIsAnimatingTicker = false; // Animation has finished
-                if (mIsDismissRequested) {
-                    hasNewEvents = false;
-                    // Dismiss was requested during animation, trigger dismiss animation
-                    retickerDismiss();
+    private void setupRetickerListeners() {
+        mRetickerView.setOnClickListener(v -> {
+            final GameSpaceManager gameSpace = mCentralSurfaces.getGameSpaceManager();
+            if ((gameSpace == null || !gameSpace.isGameActive()) && !telecomManager.isRinging()) {
+                PendingIntent reTickerIntent = notification.contentIntent;
+                if (reTickerIntent != null) {
+                    try {
+                        reTickerIntent.send();
+                    } catch (PendingIntent.CanceledException e) {
+                        e.printStackTrace();
+                    }
+                    hideReticker();
+                }
+            } else {
+                if (telecomManager != null && telecomManager.isRinging()) {
+                    telecomManager.acceptRingingCall();
+                    if (mVibratorHelper != null) {
+                        mVibratorHelper.vibrate(VibrationEffect.EFFECT_DOUBLE_CLICK);
+                    }
+                    hideReticker();
                 }
             }
         });
-        animatorSet.start();
+        mRetickerView.setOnLongClickListener(v -> {
+            boolean isDialer = isDialerApp();
+            if (!isDialer) return true;
+            if (telecomManager != null && telecomManager.isRinging()) {
+                telecomManager.endCall();
+                if (mVibratorHelper != null) {
+                    mVibratorHelper.vibrate(VibrationEffect.EFFECT_CLICK);
+                }
+                hideReticker();
+                return true;
+            }
+            return true;
+        });
+    }
+    
+    private Drawable getNotificationIcon() {
+        Drawable icon = null;
+        try {
+            if (SYSTEM_UI.equals(pkgname)) {
+                icon = mRetickerView.getContext().getDrawable(notification.icon);
+            } else {
+                icon = mRetickerView.getContext().getPackageManager().getApplicationIcon(pkgname);
+            }
+        } catch (Exception e) {}
+        return icon;
     }
 
-    public void retickerDismiss() {
-        hasNewEvents = false;
-        if (mIsAnimatingTicker) {
-            mIsDismissRequested = true;
-            return;
+    private void animateReticker(int visibility, long duration, TimeInterpolator interpolator) {
+        if (mRetickerAnimatorSet != null) {
+            mRetickerAnimatorSet.cancel();
         }
+        mRetickerAnimatorSet = new AnimatorSet();
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(mRetickerView, View.SCALE_X, visibility  == View.VISIBLE ? 1f : 0f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(mRetickerView, View.SCALE_Y, visibility  == View.VISIBLE ? 1f : 0f);
+        ObjectAnimator alpha = ObjectAnimator.ofFloat(mRetickerView, View.ALPHA, visibility  == View.VISIBLE ? 1f : 0f);
 
-        PropertyValuesHolder scaleX = PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 0f);
-        PropertyValuesHolder scaleY = PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 0f);
-        PropertyValuesHolder alpha = PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0f);
-        PropertyValuesHolder translationY = PropertyValuesHolder.ofFloat(View.TRANSLATION_Y, 0f, mReTickerComeback.getHeight() / 4f);
-
-        long animationDuration = 175;
-
-        ObjectAnimator scaleXAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, scaleX);
-        ObjectAnimator scaleYAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, scaleY);
-        ObjectAnimator translationYAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, translationY);
-        ObjectAnimator alphaAnimator = ObjectAnimator.ofPropertyValuesHolder(mReTickerComeback, alpha);
-
-        AnimatorSet animatorSet = new AnimatorSet();
-        animatorSet.playTogether(scaleXAnimator, scaleYAnimator, alphaAnimator, translationYAnimator);
-        animatorSet.setDuration(animationDuration);
-        animatorSet.setInterpolator(new AccelerateDecelerateInterpolator());
-
-        mReTickerComeback.setScaleX(1f);
-        mReTickerComeback.setScaleY(1f);
-        mReTickerComeback.setAlpha(1f);
-        mReTickerComeback.setTranslationY(0f);
-
-        animatorSet.addListener(new AnimatorListenerAdapter() {
+        mRetickerAnimatorSet.playTogether(scaleX, scaleY, alpha);
+        mRetickerAnimatorSet.setDuration(duration);
+        mRetickerAnimatorSet.setInterpolator(interpolator);
+        mRetickerAnimatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                mReTickerComeback.setVisibility(View.GONE);
-                mNotificationStackScroller.setVisibility(View.VISIBLE);
-                mReTickerComeback.getViewTreeObserver().removeOnComputeInternalInsetsListener(mInsetsListener);
+                mNotificationStackScroller.setVisibility(getExpandedFraction() == 0 ? View.GONE : View.VISIBLE);
+                if (visibility  == View.GONE) {
+                    mRetickerView.setVisibility(View.GONE);
+                    mRetickerView.getViewTreeObserver().removeOnComputeInternalInsetsListener(mInsetsListener);
+                }
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                mRetickerView.setScaleX(1f);
+                mRetickerView.setScaleY(1f);
+                mRetickerView.setAlpha(1f);
+                mRetickerView.setVisibility(View.GONE);
+                mRetickerView.getViewTreeObserver().removeOnComputeInternalInsetsListener(mInsetsListener);
             }
         });
-
-        animatorSet.start();
-    }
-
-    private Drawable getRetickerBackgroundDrawable(String pkgname, int notificationColor) {
-        Drawable dw = mView.getContext().getDrawable(R.drawable.reticker_background);
-        if (mReTickerColored) {
-            int col;
-
-            try {
-                col = Color.parseColor(pkgname);
-            } catch (Exception e) {
-                col = notificationColor;
-            }
-
-            dw.setTint(col);
-        } else {
-            dw.setTintList(null);
+        mRetickerAnimatorSet.start();
+        if (visibility == View.VISIBLE) {
+            mRetickerView.setVisibility(View.VISIBLE);
         }
-        return dw;
     }
 
+    public void showReticker() {
+        animateReticker(View.VISIBLE, 275, new DecelerateInterpolator());
+        mRetickerView.getViewTreeObserver().addOnComputeInternalInsetsListener(mInsetsListener);
+    }
+
+    public void hideReticker() {
+        if (!mReTickerStatus) return;
+        animateReticker(View.GONE, 175, new AccelerateDecelerateInterpolator());
+        reTickerViewVisibility();
+    }
+
+    public void reTickerViewVisibility() {
+        if (!mReTickerStatus) return;
+        mNotificationStackScroller.setVisibility(getExpandedFraction() == 0 ? View.GONE : View.VISIBLE);
+        if (getExpandedFraction() > 0) {
+            mRetickerView.setVisibility(View.GONE);
+        }
+    }
+    
     private final OnComputeInternalInsetsListener mInsetsListener = internalInsetsInfo -> {
         internalInsetsInfo.touchableRegion.setEmpty();
         internalInsetsInfo.setTouchableInsets(InternalInsetsInfo.TOUCHABLE_INSETS_REGION);
         int[] mainLocation = new int[2];
-        mReTickerComeback.getLocationOnScreen(mainLocation);
+        mRetickerView.getLocationOnScreen(mainLocation);
         internalInsetsInfo.touchableRegion.set(new Region(
             mainLocation[0],
             mainLocation[1],
-            mainLocation[0] + mReTickerComeback.getWidth(),
-            mainLocation[1] + mReTickerComeback.getHeight()
+            mainLocation[0] + mRetickerView.getWidth(),
+            mainLocation[1] + mRetickerView.getHeight()
         ));
     };
 }
