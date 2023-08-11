@@ -365,6 +365,7 @@ public class KeyguardSecurityContainerController extends ViewController<Keyguard
                     showPrimarySecurityScreen(false);
                 }
             };
+    private final DeviceProvisionedController mDeviceProvisionedController;
 
     private final DeviceProvisionedController mDeviceProvisionedController;
 
