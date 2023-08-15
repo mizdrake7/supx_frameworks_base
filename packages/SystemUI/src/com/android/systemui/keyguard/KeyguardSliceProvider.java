@@ -274,7 +274,6 @@ public class KeyguardSliceProvider extends SliceProvider implements
             addNextAlarmLocked(builder);
             addZenModeLocked(builder);
             addPrimaryActionLocked(builder);
-            addWeatherLocked(builder);
             slice = builder.build();
         }
         Trace.endSection();
@@ -334,20 +333,6 @@ public class KeyguardSliceProvider extends SliceProvider implements
                 .setTitle(mNextAlarm)
                 .addEndItem(alarmIcon, ListBuilder.ICON_IMAGE);
         builder.addRow(alarmRowBuilder);
-    }
-
-    protected void addWeatherLocked(ListBuilder builder) {
-        if (!mShowWeatherSlice || mShowWeatherStyle == 0
-                || !mWeatherClient.isOmniJawsEnabled() || mWeatherData == null) {
-            return;
-        }
-        IconCompat weatherIcon = SliceViewUtil.createIconFromDrawable(mWeatherClient.getWeatherConditionImage(mWeatherData.conditionCode));
-        String weatherText = mWeatherData.temp + " " + mWeatherData.tempUnits;
-        if (mShowWeatherSliceLocation) weatherText = weatherText + " " + mWeatherData.city;
-        RowBuilder weatherRowBuilder = new RowBuilder(mWeatherUri)
-                .setTitle(weatherText)
-                .addEndItem(weatherIcon, ListBuilder.ICON_IMAGE);
-        builder.addRow(weatherRowBuilder);
     }
 
     /**
