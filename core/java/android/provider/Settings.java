@@ -6479,6 +6479,12 @@ public final class Settings {
          * @hide
          */
         public static final String LOCKSCREEN_WEATHER_STYLE = "lockscreen_weather_style";
+        
+        /**
+         * QS Header
+         * @hide
+         */
+        public static final String QS_HEADER_IMAGE = "qs_header_image";
 
         /**
          * These are all public system settings
