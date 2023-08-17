@@ -42,10 +42,6 @@
 
     <!-- Cycle through ringer modes -->
     <string name="volume_dialog_ringer_guidance_normal">Calls and notifications will ring</string>
-
-    <!-- SystemUI Restart -->
-    <string name="systemui_restart_title">SystemUI restart required</string>
-    <string name="systemui_restart_message">For all changes to take effect, a SystemUI restart is required. Restart SystemUI now?</string>
     
     <!-- Title & summary of notification letting users know that battery saver is now on [CHAR_LIMIT=80] -->
     <string name="battery_saver_on_notification_title">Battery Saver turned on</string>
@@ -76,6 +72,10 @@
     <!-- System Reboot -->
     <string name="system_restart_title">System restart required</string>
     <string name="system_restart_message">For all the changes to take effect, a system restart is required. Perform system restart now?</string>
+    
+    <!-- SystemUI Restart -->
+    <string name="systemui_restart_title">SystemUI restart required</string>
+    <string name="systemui_restart_message">For all changes to take effect, a SystemUI restart is required. Restart SystemUI now?</string>
     
     <!-- Sleep Mode -->
     <string name="notification_channel_sleep">Sleep Mode</string>

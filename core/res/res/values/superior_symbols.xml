@@ -62,10 +62,6 @@
     <!-- Display color inversion availability -->
     <java-symbol type="bool" name="config_displayInversionAvailable" />
 
-    <!-- SystemUI Restart -->
-    <java-symbol type="string" name="systemui_restart_title" />
-    <java-symbol type="string" name="systemui_restart_message" />
-
     <!-- Boost Framework -->
     <java-symbol type="bool" name="config_supportsBoostFramework" />
 
@@ -111,6 +107,10 @@
     <!-- Soft restart dialog -->
     <java-symbol type="string" name="system_restart_title" />
     <java-symbol type="string" name="system_restart_message" />
+    
+    <!-- SystemUI restart dialog -->
+    <java-symbol type="string" name="systemui_restart_title" />
+    <java-symbol type="string" name="systemui_restart_message" />
     
     <!-- Location indicator -->
     <java-symbol type="drawable" name="stat_sys_location" />
