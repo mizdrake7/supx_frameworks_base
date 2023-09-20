@@ -18,10 +18,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_gravity="start"
     android:gravity="center_vertical"
     android:clipToPadding="false"
-    android:paddingStart="@dimen/below_clock_padding_start">
+    android:orientation="vertical" >
 
     <LinearLayout
         android:id="@+id/current"
@@ -44,6 +43,20 @@
             android:singleLine="true"
             android:paddingStart="8dp"
             style="@style/TextAppearance.Keyguard.Secondary" />
+            
     </LinearLayout>
+    <TextClock
+            android:id="@+id/date"
+            style="@style/TextAppearance.Keyguard.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:textColor="?attr/wallpaperTextColor"
+            android:layout_marginTop="30dp"
+            android:letterSpacing="0.03"
+            android:gravity="center_horizontal"
+            android:format12Hour="EEE, d MMM yyyy"
+            android:format24Hour="EEE, d MMM yyyy"
+        />
 
 </com.android.systemui.superior.CurrentWeatherView>

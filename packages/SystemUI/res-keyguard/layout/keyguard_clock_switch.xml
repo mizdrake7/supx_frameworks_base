@@ -27,11 +27,10 @@
     android:layout_gravity="center_horizontal|top">
     <FrameLayout
         android:id="@+id/lockscreen_clock_view"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:paddingStart="@dimen/clock_padding_start"
         android:visibility="invisible" />
     <FrameLayout
         android:id="@+id/lockscreen_clock_view_large"
@@ -57,8 +56,10 @@
 
         <include layout="@layout/current_weather_view"
             android:id="@+id/weather_container"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_centerHorizontal="true"
             android:visibility="gone" />
 
       <com.android.systemui.statusbar.phone.NotificationIconContainer
