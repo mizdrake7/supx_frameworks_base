@@ -59,6 +59,7 @@ import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.database.ContentObserver;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.PixelFormat;
@@ -71,6 +72,7 @@ import android.graphics.drawable.RotateDrawable;
 import android.media.AppVolume;
 import android.media.AudioManager;
 import android.media.AudioSystem;
+import android.net.Uri;
 import android.media.MediaPlayer;
 import android.media.session.MediaController;
 import android.media.session.MediaSessionManager;
@@ -80,6 +82,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.os.Trace;
 import android.os.VibrationEffect;
 import android.provider.DeviceConfig;
@@ -311,6 +314,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
 
     // Volume panel placement left or right
     private boolean mVolumePanelOnLeft;
+    private CustomSettingsObserver mCustomSettingsObserver;
     private TunerService mTunerService;
 
     private final boolean mUseBackgroundBlur;
@@ -400,9 +404,8 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             mTunerService.addTunable(mTunable, VOLUME_TEXTVIEW, VOLUME_TEXTVIEW_STYLE);
         }
 
-        if (!mShowActiveStreamOnly) {
-            mVolumePanelOnLeft = mContext.getResources().getBoolean(R.bool.config_audioPanelOnLeftSide);;
-        }
+        mCustomSettingsObserver = new CustomSettingsObserver();
+        mCustomSettingsObserver.observe();
 
         initDimens();
 
@@ -476,6 +479,7 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
         mHandler.removeCallbacksAndMessages(null);
         mConfigurationController.removeCallback(this);
         mDeviceConfigProxy.removeOnPropertiesChangedListener(this::onDeviceConfigChange);
+        mCustomSettingsObserver.stop();
     }
 
     /**
@@ -3017,6 +3021,44 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
                 mRingerDrawerNewSelectionBg.animate()
                         .translationX(getTranslationInDrawerForRingerMode(mClickedRingerMode))
                         .start();
+        }
+    }
+    
+     private class CustomSettingsObserver extends ContentObserver {
+
+        private final Uri VOLUME_PANEL_ON_LEFT_URI = Settings.System.getUriFor(
+                Settings.System.VOLUME_PANEL_ON_LEFT);
+
+        CustomSettingsObserver() {
+            super(new Handler(Looper.getMainLooper()));
+        }
+
+        void observe() {
+            final ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(VOLUME_PANEL_ON_LEFT_URI,
+                    false, this, UserHandle.USER_ALL);
+            updateVolumeDialog();
+        }
+
+        void stop() {
+            mContext.getContentResolver().unregisterContentObserver(this);
+        }
+
+        void updateVolumeDialog() {
+            mVolumePanelOnLeft = Settings.System.getIntForUser(
+                    mContext.getContentResolver(),
+                    Settings.System.VOLUME_PANEL_ON_LEFT,
+                    0, UserHandle.USER_CURRENT) == 1;
+            mHandler.post(() -> {
+                    mConfigChanged = true;
+            });
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            if (uri.equals(VOLUME_PANEL_ON_LEFT_URI)) {
+                updateVolumeDialog();
+            }
         }
     }
 }
