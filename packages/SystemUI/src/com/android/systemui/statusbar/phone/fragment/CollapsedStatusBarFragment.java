@@ -121,6 +121,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
     private LinearLayout mEndSideContent;
     private View mOngoingCallChip;
     private View mClockView;
+    private View mCenterClockView;
+    private View mRightClockView;
     private View mNotificationIconAreaInner;
     private int mDisabled1;
     private int mDisabled2;
@@ -298,6 +300,8 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
         mClockController = new ClockController(getContext(), mStatusBar);
         mOngoingCallChip = mStatusBar.findViewById(R.id.ongoing_call_chip);
         mClockView = mStatusBar.findViewById(R.id.clock);
+        mCenterClockView = mStatusBar.findViewById(R.id.clock_center);
+        mRightClockView = mStatusBar.findViewById(R.id.clock_right);
         showEndSideContent(false);
         showClock(false);
         initOperatorName();
@@ -426,6 +430,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
             int resId = getContext().getResources().getIdentifier(chipStyleUri, "drawable", "com.android.systemui");
             mClockView.setBackgroundResource(resId);
             mClockView.setPadding(10,2,10,2);
+            mCenterClockView.setBackgroundResource(resId);
+            mCenterClockView.setPadding(10,2,10,2);
+            mRightClockView.setBackgroundResource(resId);
+            mRightClockView.setPadding(10,2,10,2);
         } else {
             int clockPaddingStart = getResources().getDimensionPixelSize(
                     R.dimen.status_bar_clock_starting_padding);
@@ -437,6 +445,10 @@ public class CollapsedStatusBarFragment extends Fragment implements CommandQueue
                     R.dimen.status_bar_left_clock_end_padding);
             mClockView.setBackgroundResource(0);
             mClockView.setPaddingRelative(leftClockPaddingStart, 0, leftClockPaddingEnd, 0);
+            mCenterClockView.setBackgroundResource(0);
+            mCenterClockView.setPaddingRelative(0,0,0,0);
+            mRightClockView.setBackgroundResource(0);
+            mRightClockView.setPaddingRelative(clockPaddingStart, 0, clockPaddingEnd, 0);
         }
     }
 
