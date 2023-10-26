@@ -147,7 +147,7 @@ public class Clock extends TextView implements
     public static final int FONT_NOTOSERIF_BOLD = 23;
     public static final int FONT_NOTOSERIF_BOLD_ITALIC = 24;
     public int DEFAULT_CLOCK_COLOR = 0xffffffff;
-    private int mClockColor = 0xffffffff;
+    public int mClockColor = 0xffffffff;
     private final CommandQueue mCommandQueue;
     private int mCurrentUserId;
 
@@ -862,7 +862,7 @@ public class Clock extends TextView implements
         }
     }
 
-    private void updateClockColor() {
+    public void updateClockColor() {
         if (mClockColor == 0xFFFFFFFF) {
             setTextColor(mNonAdaptedColor);
         } else {

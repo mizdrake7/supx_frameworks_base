@@ -515,6 +515,7 @@ constructor(
             qsCarrierGroup.updateColors(textColorPrimary, colorStateList)
             batteryIcon.updateColors(textColorPrimary, textColorSecondary, textColorPrimary)
             clock.updateClockSize()
+            clock.updateClockColor()
         }
     }
 
