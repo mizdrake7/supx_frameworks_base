@@ -191,7 +191,7 @@ public class QuickStatusBarHeader extends FrameLayout implements TunerService.Tu
                 updateResources();
                 break;
             case QS_HEADER_IMAGE_HEIGHT_PORTRAIT:
-                qshiHeightPortrait = TunerService.parseInteger(newValue, 325);
+                qshiHeightPortrait = TunerService.parseInteger(newValue, 460);
                 updateResources();
                 break;
             case QS_HEADER_IMAGE_HEIGHT_LANDSCAPE:

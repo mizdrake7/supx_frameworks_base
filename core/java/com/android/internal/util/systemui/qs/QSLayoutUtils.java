@@ -43,7 +43,7 @@ public class QSLayoutUtils {
     public static float getQSTileSecondaryLabelSize(Context context) {
         return (float) Settings.System.getIntForUser(context.getContentResolver(),
                 Settings.System.QS_TILE_SECONDARY_LABEL_SIZE,
-                13, UserHandle.USER_CURRENT);
+                11, UserHandle.USER_CURRENT);
     }
 
    public static int getQsUiStyle(Context context) {
@@ -55,7 +55,7 @@ public class QSLayoutUtils {
     public static float getQSTileLabelSize(Context context) {
         return (float) Settings.System.getIntForUser(context.getContentResolver(),
                 Settings.System.QS_TILE_LABEL_SIZE,
-                15, UserHandle.USER_CURRENT);
+                12, UserHandle.USER_CURRENT);
     }
 
    public static boolean updateLayout(Context context) {
