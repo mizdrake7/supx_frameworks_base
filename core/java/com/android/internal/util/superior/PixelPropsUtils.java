@@ -78,13 +78,6 @@ public class PixelPropsUtils {
             "com.google.android.apps.nexuslauncher"
     };
 
-    private static final String[] streamingPackagesToChange = {
-        "com.amazon.avod.thirdpartyclient",
-        "com.disney.disneyplus",
-        "com.netflix.mediaclient",
-        "in.startv.hotstar"
-    };
-
     private static final String[] packagesToKeep = {
             "com.google.android.dialer",
             "com.google.android.euicc",
@@ -170,8 +163,7 @@ public class PixelPropsUtils {
         }
         if (packageName.startsWith("com.google.")
                 || packageName.startsWith(SAMSUNG)
-                || Arrays.asList(extraPackagesToChange).contains(packageName)
-                || Arrays.asList(streamingPackagesToChange).contains(packageName)) {
+                || Arrays.asList(extraPackagesToChange).contains(packageName)) {
 
             Map<String, Object> propsToChange = new HashMap<>();
 
