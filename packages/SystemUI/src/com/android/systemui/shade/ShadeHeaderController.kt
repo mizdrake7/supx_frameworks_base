@@ -401,13 +401,6 @@ constructor(
         }
 
         view.updateAllConstraints(changes)
-        updateBatteryMode()
-    }
-
-    private fun updateBatteryMode() {
-        qsBatteryModeController.getBatteryMode(cutout, qsExpandedFraction)?.let {
-            batteryIcon.setPercentShowMode(it)
-        }
     }
 
     private fun updateScrollY() {
@@ -466,7 +459,6 @@ constructor(
         if (!largeScreenActive && visible) {
             logInstantEvent("updatePosition: $qsExpandedFraction")
             header.progress = qsExpandedFraction
-            updateBatteryMode()
         }
     }
 
