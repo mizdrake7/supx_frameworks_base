@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2018 crDroid Android Project
  * Copyright (C) 2018-2019 AICP
+ * Copyright (C) 2023 Superior-Extended
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,68 +20,36 @@ package com.android.systemui.superior.logo;
 
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.Color;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.provider.Settings;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
-import com.android.settingslib.Utils;
 import com.android.systemui.R;
 import com.android.systemui.Dependency;
 import com.android.systemui.plugins.DarkIconDispatcher;
 import com.android.systemui.plugins.DarkIconDispatcher.DarkReceiver;
+import com.android.settingslib.Utils;
 
 import java.util.ArrayList;
 
-public abstract class LogoImage extends ImageView {
+public abstract class LogoImage extends ImageView implements DarkReceiver {
 
     private Context mContext;
-
     private boolean mAttached;
-
     private boolean mShowLogo;
-    public int mLogoPosition;
+    private int mLogoPosition;
     private int mLogoStyle;
     private int mTintColor = Color.WHITE;
 
-    private static final String STATUS_BAR_LOGO =
-            Settings.System.STATUS_BAR_LOGO;
-    private static final String STATUS_BAR_LOGO_POSITION =
-            Settings.System.STATUS_BAR_LOGO_POSITION;
-    private static final String STATUS_BAR_LOGO_STYLE =
-            Settings.System.STATUS_BAR_LOGO_STYLE;
-
-    class SettingsObserver extends ContentObserver {
-
-        public SettingsObserver(Handler handler) {
-            super(handler);
-        }
-
-        void observe() {
-            ContentResolver resolver = mContext.getContentResolver();
-            resolver.registerContentObserver(
-                    Settings.System.getUriFor(STATUS_BAR_LOGO), false, this);
-            resolver.registerContentObserver(
-                    Settings.System.getUriFor(STATUS_BAR_LOGO_POSITION),
-                    false, this);
-            resolver.registerContentObserver(
-                    Settings.System.getUriFor(STATUS_BAR_LOGO_STYLE),
-                    false, this);
-        }
-
-        @Override
-        public void onChange(boolean selfChange) {
-            updateSettings();
-        }
-    }
+    private static final String STATUS_BAR_LOGO = Settings.System.STATUS_BAR_LOGO;
+    private static final String STATUS_BAR_LOGO_POSITION = Settings.System.STATUS_BAR_LOGO_POSITION;
+    private static final String STATUS_BAR_LOGO_STYLE = Settings.System.STATUS_BAR_LOGO_STYLE;
 
     public LogoImage(Context context) {
         this(context, null);
@@ -92,37 +61,36 @@ public abstract class LogoImage extends ImageView {
 
     public LogoImage(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        final Resources resources = getResources();
         mContext = context;
+        init();
     }
 
-    protected abstract boolean isLogoHidden();
+    private void init() {
+        mAttached = false;
+        SettingsObserver observer = new SettingsObserver(new Handler());
+        observer.observe();
+        updateSettings();
+        Dependency.get(DarkIconDispatcher.class).addDarkReceiver((DarkReceiver) this);
+    }
 
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        if (mAttached)
-            return;
-
-        mAttached = true;
-
-        SettingsObserver observer = new SettingsObserver(new Handler());
-        observer.observe();
-        updateSettings();
-
-        Dependency.get(DarkIconDispatcher.class).addDarkReceiver(this);
+        if (!mAttached) {
+            mAttached = true;
+        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        if (!mAttached)
-            return;
-
-        mAttached = false;
-        Dependency.get(DarkIconDispatcher.class).removeDarkReceiver(this);
+        if (mAttached) {
+            mAttached = false;
+            Dependency.get(DarkIconDispatcher.class).addDarkReceiver((DarkReceiver) this);
+        }
     }
 
+    @Override
     public void onDarkChanged(ArrayList<Rect> areas, float darkIntensity, int tint) {
         mTintColor = DarkIconDispatcher.getTint(areas, this, tint);
         if (mShowLogo && !isLogoHidden()) {
@@ -131,119 +99,42 @@ public abstract class LogoImage extends ImageView {
     }
 
     public void updateLogo() {
-        Drawable drawable = null;
-        switch(mLogoStyle){
-            case 0:
-            default:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_adidas);
-                break;
-            case 1:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_airjordan);
-                break;
-            case 2:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_alien);
-                break;
-            case 3:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_amogus);
-                break;
-            case 4:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_apple_logo);
-                break;
-            case 5:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_avengers);
-                break;
-            case 6:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_batman);
-                break;
-            case 7:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_batman_tdk);
-                break;
-            case 8:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_beats);
-                break;
-            case 9:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_biohazard);
-                break;
-            case 10:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_blackberry);
-                break;
-            case 11:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_cannabis);
-                break;
-            case 12:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_captain_america);
-                break;
-            case 13:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_fire);
-                break;
-            case 14:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_flash);
-                break;
-            case 15:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_ghost);
-                break;
-            case 16:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_heart);
-                break;
-            case 17:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_ironman);
-                break;
-            case 18:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_mint_logo);
-                break;
-            case 19:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_nike);
-                break;
-            case 20:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_ninja);
-                break;
-            case 21:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_pac_man);
-                break;
-            case 22:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_puma);
-                break;
-            case 23:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_robot);
-                break;
-            case 24:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_rog);
-                break;
-            case 25:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_spiderman);
-                break;
-            case 26:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_superman);
-                break;
-            case 27:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_tux_logo);
-                break;
-            case 28:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_ubuntu_logo);
-                break;
-            case 29:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_windows);
-                break;
-            case 30:
-                drawable = mContext.getResources().getDrawable(R.drawable.ic_xbox);
-                break;
-        }
-
+        Drawable drawable = getLogoDrawable(mLogoStyle);
         setImageDrawable(null);
-
         clearColorFilter();
-
         drawable.setTint(mTintColor);
         setImageDrawable(drawable);
     }
 
+    private Drawable getLogoDrawable(int style) {
+        int[] logoResources = {
+            R.drawable.ic_adidas, R.drawable.ic_airjordan, R.drawable.ic_alien,
+            R.drawable.ic_amogus, R.drawable.ic_apple_logo, R.drawable.ic_avengers,
+            R.drawable.ic_batman, R.drawable.ic_batman_tdk, R.drawable.ic_beats,
+            R.drawable.ic_biohazard, R.drawable.ic_blackberry, R.drawable.ic_cannabis,
+            R.drawable.ic_captain_america, R.drawable.ic_fire, R.drawable.ic_flash,
+            R.drawable.ic_ghost, R.drawable.ic_heart, R.drawable.ic_ironman,
+            R.drawable.ic_mint_logo, R.drawable.ic_nike, R.drawable.ic_ninja,
+            R.drawable.ic_pac_man, R.drawable.ic_puma, R.drawable.ic_robot,
+            R.drawable.ic_rog, R.drawable.ic_spiderman, R.drawable.ic_superman,
+            R.drawable.ic_tux_logo, R.drawable.ic_ubuntu_logo, R.drawable.ic_windows,
+            R.drawable.ic_xbox
+        };
+
+        int index = (style >= 0 && style < logoResources.length) ? style : 0;
+        return mContext.getResources().getDrawable(logoResources[index]);
+    }
+    
+    // Add a protected getter method for mLogoPosition
+    protected int getLogoPosition() {
+         return mLogoPosition;
+    }
+
     public void updateSettings() {
-        mShowLogo = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.STATUS_BAR_LOGO, 0) != 0;
-        mLogoPosition = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.STATUS_BAR_LOGO_POSITION, 0);
-        mLogoStyle = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.STATUS_BAR_LOGO_STYLE, 0);
+        mShowLogo = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO, 0) != 0;
+        mLogoPosition = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO_POSITION, 0);
+        mLogoStyle = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO_STYLE, 0);
+
         if (!mShowLogo || isLogoHidden()) {
             setImageDrawable(null);
             setVisibility(View.GONE);
@@ -251,5 +142,26 @@ public abstract class LogoImage extends ImageView {
         }
         updateLogo();
         setVisibility(View.VISIBLE);
+    }
+
+    protected abstract boolean isLogoHidden();
+
+    private class SettingsObserver extends ContentObserver {
+
+        public SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            ContentResolver resolver = mContext.getContentResolver();
+            resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_POSITION), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_STYLE), false, this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            updateSettings();
+        }
     }
 }

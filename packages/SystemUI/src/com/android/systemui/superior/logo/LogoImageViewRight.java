@@ -20,13 +20,9 @@ package com.android.systemui.superior.logo;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
-import android.provider.Settings;
 import android.util.AttributeSet;
 
-public class LogoImageViewRight extends LogoImage
-{
-
-    private Context mContext;
+public class LogoImageViewRight extends LogoImage {
 
     public LogoImageViewRight(Context context) {
         this(context, null);
@@ -38,17 +34,10 @@ public class LogoImageViewRight extends LogoImage
 
     public LogoImageViewRight(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        final Resources resources = getResources();
-        mContext = context;
     }
 
     @Override
-    protected boolean isLogoHidden()
-    {
-        if(mLogoPosition == 0 || mLogoPosition == 2){
-            return true;
-        }
-        return false;
-    }
-
+    protected boolean isLogoHidden() {
+        return getLogoPosition() == 0 || getLogoPosition() == 2;
+}
 }

@@ -23,10 +23,7 @@ import android.graphics.Color;
 import android.provider.Settings;
 import android.util.AttributeSet;
 
-public class LogoImageView extends LogoImage
-{
-
-    private Context mContext;
+public class LogoImageView extends LogoImage {
 
     public LogoImageView(Context context) {
         this(context, null);
@@ -38,17 +35,10 @@ public class LogoImageView extends LogoImage
 
     public LogoImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        final Resources resources = getResources();
-        mContext = context;
     }
 
     @Override
-    protected boolean isLogoHidden()
-    {
-        if(mLogoPosition == 1 || mLogoPosition == 3){
-            return true;
-        }
-        return false;
-    }
-
+    protected boolean isLogoHidden() {
+        return getLogoPosition() == 1 || getLogoPosition() == 3;
+}
 }
