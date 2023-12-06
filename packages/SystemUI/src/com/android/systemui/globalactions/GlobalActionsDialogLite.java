@@ -2741,9 +2741,6 @@ public class GlobalActionsDialogLite implements DialogInterface.OnDismissListene
                 int blurBehindRadius = mContext.getResources()
                         .getDimensionPixelSize(com.android.systemui.R.dimen.max_window_blur_radius);
                 window.getAttributes().setBlurBehindRadius(blurBehindRadius);
-                window.setDimAmount(0.54f);
-            } else {
-                window.setDimAmount(0.88f);
             }
 
             // If user entered from the lock screen and smart lock was enabled, disable it
