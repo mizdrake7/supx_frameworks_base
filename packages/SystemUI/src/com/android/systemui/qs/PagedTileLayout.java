@@ -145,7 +145,7 @@ public class PagedTileLayout extends ViewPager implements QSTileLayout {
                 height = Math.max(height, tileLayout.getTilesHeight());
             }
         }
-        mLogger.d("getTilesHeight ret=", height);
+        if (DEBUG) Log.d(TAG, "getTilesHeight ret=" + height);
         return height;
     }
 
