@@ -22,6 +22,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.database.ContentObserver;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
@@ -46,10 +47,15 @@ public abstract class LogoImage extends ImageView implements DarkReceiver {
     private int mLogoPosition;
     private int mLogoStyle;
     private int mTintColor = Color.WHITE;
+    private int mLogoColor;
+    private int mLogoColorCustom;
+    private int mAccentColor;
 
     private static final String STATUS_BAR_LOGO = Settings.System.STATUS_BAR_LOGO;
     private static final String STATUS_BAR_LOGO_POSITION = Settings.System.STATUS_BAR_LOGO_POSITION;
     private static final String STATUS_BAR_LOGO_STYLE = Settings.System.STATUS_BAR_LOGO_STYLE;
+    private static final String STATUS_BAR_LOGO_COLOR = Settings.System.STATUS_BAR_LOGO_COLOR;
+    private static final String STATUS_BAR_LOGO_COLOR_PICKER = Settings.System.STATUS_BAR_LOGO_COLOR_PICKER;
 
     public LogoImage(Context context) {
         this(context, null);
@@ -102,7 +108,14 @@ public abstract class LogoImage extends ImageView implements DarkReceiver {
         Drawable drawable = getLogoDrawable(mLogoStyle);
         setImageDrawable(null);
         clearColorFilter();
-        drawable.setTint(mTintColor);
+        if (mLogoColor == 0) {
+            drawable.setTint(mTintColor);
+        } else if (mLogoColor == 1) {
+            mAccentColor =  mContext.getColor(com.android.internal.R.color.logo_accent_color);
+            setColorFilter(mAccentColor, PorterDuff.Mode.SRC_IN);
+        } else if (mLogoColor == 2) {
+            setColorFilter(mLogoColorCustom, PorterDuff.Mode.SRC_IN);
+        }
         setImageDrawable(drawable);
     }
 
@@ -134,6 +147,8 @@ public abstract class LogoImage extends ImageView implements DarkReceiver {
         mShowLogo = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO, 0) != 0;
         mLogoPosition = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO_POSITION, 0);
         mLogoStyle = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO_STYLE, 0);
+        mLogoColor = Settings.System.getInt(mContext.getContentResolver(), STATUS_BAR_LOGO_COLOR, 0);
+        mLogoColorCustom = Settings.System.getInt(mContext.getContentResolver(),STATUS_BAR_LOGO_COLOR_PICKER, 0xff1a73e8);
 
         if (!mShowLogo || isLogoHidden()) {
             setImageDrawable(null);
@@ -157,6 +172,8 @@ public abstract class LogoImage extends ImageView implements DarkReceiver {
             resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_POSITION), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_STYLE), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_COLOR), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(STATUS_BAR_LOGO_COLOR_PICKER), false, this);
         }
 
         @Override
